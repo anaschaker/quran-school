@@ -9,13 +9,13 @@ import {
   GoalStatus,
   InvoiceStatus,
   PaymentMethod,
-  PrismaClient,
   RecitationType,
   ResourceType,
   Role,
 } from "@prisma/client";
+import { createPrismaClient } from "../src/lib/prisma";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 const DEMO_PASSWORD = process.env.DEMO_SEED_PASSWORD ?? "Quran@1234";
 const BCRYPT_ROUNDS = 12;

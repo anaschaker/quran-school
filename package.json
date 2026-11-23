@@ -10,6 +10,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+"db:migrate:turso": "tsx scripts/turso-migrate.ts",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "test": "vitest run",
@@ -17,6 +18,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "@netlify/blobs": "^11.1.9",
+    "@prisma/adapter-libsql": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.15",

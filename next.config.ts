@@ -18,7 +18,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output: "standalone",
+  output: process.env.NETLIFY ? undefined : "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   async headers() {

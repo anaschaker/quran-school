@@ -27,17 +27,25 @@ const BACKUP_CANDIDATES = [
 ].filter(Boolean) as string[];
 
 function latestBackup(): { file: string; mtime: Date } | null {
+  // على منصات serverless (Netlify) لا يوجد نظام ملفات محلي — تجاهل.
+  if (process.env.NETLIFY || process.env.TURSO_DATABASE_URL) {
+    return null;
+  }
   let latest: { file: string; mtime: Date } | null = null;
 
   for (const dir of BACKUP_CANDIDATES) {
-    if (!fs.existsSync(dir)) continue;
-    for (const name of fs.readdirSync(dir)) {
-      if (!/^quran-school-backup-\d{4}-\d{2}-\d{2}\.db$/.test(name)) continue;
-      const fullPath = path.join(dir, name);
-      const stat = fs.statSync(fullPath);
-      if (!latest || stat.mtime > latest.mtime) {
-        latest = { file: fullPath, mtime: stat.mtime };
+    try {
+      if (!dir || !fs.existsSync(dir)) continue;
+      for (const name of fs.readdirSync(dir)) {
+        if (!/^quran-school-backup-\d{4}-\d{2}-\d{2}\.db$/.test(name)) continue;
+        const fullPath = path.join(dir, name);
+        const stat = fs.statSync(fullPath);
+        if (!latest || stat.mtime > latest.mtime) {
+          latest = { file: fullPath, mtime: stat.mtime };
+        }
       }
+    } catch {
+      // تجاهل أخطاء نظام الملفات.
     }
   }
 

@@ -7,11 +7,12 @@
 //
 // الأمان: لا يعمل هذا السكربت إذا كان هناك مدير موجود مسبقًا بنفس البريد.
 import { execSync } from "node:child_process";
-import { PrismaClient, Role } from "@prisma/client";
+import { Role } from "@prisma/client";
+import { createPrismaClient } from "../src/lib/prisma";
 import { hash } from "bcryptjs";
 import readline from "node:readline/promises";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 function fail(message: string): never {
   console.error(`\n❌ ${message}\n`);

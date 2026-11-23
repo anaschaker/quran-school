@@ -1,6 +1,6 @@
 // نسخة احتياطية متسقة (VACUUM INTO) لقاعدة SQLite مع احتفاظ بآخر 14 نسخة.
 // المتغيرات: BACKUP_DIR (افتراضي ./backups)، BACKUP_RETENTION (افتراضي 14).
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/lib/prisma";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -21,7 +21,7 @@ async function main() {
     return;
   }
 
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   let ok = false;
 
   try {

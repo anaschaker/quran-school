@@ -9,6 +9,14 @@ export async function GET() {
     return new Response("غير مصرح", { status: 403 });
   }
 
+  // على Netlify/Turso لا يوجد ملف SQLite محلي — استخدم نسخ Turso (turso db dump).
+  if (process.env.TURSO_DATABASE_URL) {
+    return new Response(
+      "النسخة الاحتياطية (ملف .db) غير متاحة على Netlify. استخدم لوحة Turso (turso db dump) أو Neon (pg_dump) لتنزيل نسخة احتياطية.",
+      { status: 501 },
+    );
+  }
+
   const url = process.env.DATABASE_URL ?? "file:./dev.db";
 
   if (!url.startsWith("file:")) {

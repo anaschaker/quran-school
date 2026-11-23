@@ -13,7 +13,7 @@
 - أدلة: `DEPLOY.md`، docs/USER-GUIDE-*.md، LAUNCH-CHECKLIST.md، HANDOVER.md.
 - حالة الإطلاق: `/admin/launch-status`.
 - حزمة التسليم: `scripts/package-release.sh`.
-- Render/Fly.io: `render.yaml` + `fly.toml` (Docker + volumes + healthcheck) + `docs/DEPLOY-RENDER.md`.
+- Netlify: `netlify.toml` + `docs/DEPLOY-NETLIFY.md` + دعم Turso (libSQL) وNetlify Blobs (تخزين الموارد).
 
 ### تحديث بيانات التواصل والدوام والعملة
 

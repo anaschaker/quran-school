@@ -176,9 +176,8 @@ export async function deleteResource(formData: FormData): Promise<void> {
 
   try {
     if (resource.filePath) {
-      const { getStoragePath } = await import("@/lib/resources");
-      const fs = await import("node:fs/promises");
-      await fs.unlink(getStoragePath(resource.filePath)).catch(() => undefined);
+      const { deleteResourceFile } = await import("@/lib/resources");
+      await deleteResourceFile(resource.filePath);
     }
     await prisma.resource.delete({ where: { id } });
   } catch (error) {

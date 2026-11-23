@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getStoragePath } from "@/lib/resources";
-import { readFile } from "node:fs/promises";
+import { readResourceFile } from "@/lib/resources";
 
 export async function GET(
   _request: Request,
@@ -67,7 +66,7 @@ export async function GET(
 
   let data: Buffer;
   try {
-    data = await readFile(getStoragePath(resource.filePath));
+    data = await readResourceFile(resource.filePath);
   } catch {
     return new Response("غير موجود", { status: 404 });
   }

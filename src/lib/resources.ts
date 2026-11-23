@@ -15,6 +15,7 @@ const ALLOWED_MIMES: Record<string, string[]> = {
 };
 
 export async function ensureStorageDir(): Promise<void> {
+  if (isBlobMode()) return;
   await fs.mkdir(STORAGE_DIR, { recursive: true });
 }
 
@@ -51,6 +52,19 @@ export type SavedFile = {
   originalName: string;
 };
 
+function isBlobMode(): boolean {
+  return (
+    process.env.RESOURCE_STORAGE === "blob" ||
+    !!process.env.NETLIFY ||
+    Boolean(process.env.NETLIFY_BLOBS_CONTEXT)
+  );
+}
+
+async function getBlobStore() {
+  const { getStore } = await import("@netlify/blobs");
+  return getStore("resources");
+}
+
 export async function saveUploadedFile(file: File): Promise<SavedFile> {
   if (file.size === 0) throw new Error("empty");
   if (file.size > MAX_SIZE) throw new Error("too-large");
@@ -61,11 +75,17 @@ export async function saveUploadedFile(file: File): Promise<SavedFile> {
     throw new Error("invalid-type");
   }
 
-  await ensureStorageDir();
   const ext = ALLOWED_MIMES[mime][0];
   const filename = `${randomUUID()}${ext}`;
-  const fullPath = path.join(STORAGE_DIR, filename);
-  await fs.writeFile(fullPath, buffer);
+
+  if (isBlobMode()) {
+    const store = await getBlobStore();
+    await store.set(filename, buffer as unknown as Blob, { metadata: { contentType: mime } });
+  } else {
+    await ensureStorageDir();
+    const fullPath = path.join(STORAGE_DIR, filename);
+    await fs.writeFile(fullPath, buffer);
+  }
 
   return {
     filePath: filename,
@@ -77,6 +97,25 @@ export async function saveUploadedFile(file: File): Promise<SavedFile> {
 
 export function getStoragePath(filename: string): string {
   return path.join(STORAGE_DIR, filename);
+}
+
+export async function readResourceFile(filename: string): Promise<Buffer> {
+  if (isBlobMode()) {
+    const store = await getBlobStore();
+    const data = await store.get(filename, { type: "arrayBuffer" });
+    if (!data) throw new Error("not-found");
+    return Buffer.from(data);
+  }
+  return fs.readFile(getStoragePath(filename));
+}
+
+export async function deleteResourceFile(filename: string): Promise<void> {
+  if (isBlobMode()) {
+    const store = await getBlobStore();
+    await store.delete(filename);
+    return;
+  }
+  await fs.unlink(getStoragePath(filename)).catch(() => undefined);
 }
 
 export const RESOURCE_ALLOWED_TYPES = Object.keys(ALLOWED_MIMES);

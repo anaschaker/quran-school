@@ -137,6 +137,7 @@ npm run start
 ## النشر والتوثيق
 
 - **DEPLOY.md**: خطوات النشر من الصفر (VPS، Docker، Nginx، HTTPS، نسخ احتياطي).
+- **docs/DEPLOY-NETLIFY.md**: النشر على Netlify (Turso + Netlify Blobs) بدون بطاقة."
 - **docs/DEPLOY-RENDER.md**: النشر على Render خطوة بخطوة (Docker + Disk).
 - **docs/USER-GUIDE-ADMIN.md**: دليل المدير (خطوات نصية).
 - **docs/USER-GUIDE-TEACHER.md**: دليل المعلم.

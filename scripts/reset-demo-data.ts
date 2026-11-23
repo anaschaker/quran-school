@@ -5,10 +5,10 @@
 //   npx tsx scripts/reset-demo-data.ts
 // أو للتشغيل الآلي:
 //   CONFIRM_RESET_DEMO=YES npx tsx scripts/reset-demo-data.ts
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/lib/prisma";
 import readline from "node:readline/promises";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 const DEMO_USER_IDS = [
   "user-admin",
