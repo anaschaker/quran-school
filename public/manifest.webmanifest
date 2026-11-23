@@ -1,0 +1,21 @@
+{
+  "name": "مدرسة القرآن الكريم",
+  "short_name": "مدرسة القرآن",
+  "description": "مدرسة قرآنية تعنى بتعليم كتاب الله تعالى",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbfaf5",
+  "theme_color": "#0f3d2e",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,648 @@
+// مخطط قاعدة البيانات — مدرسة القرآن الكريم
+// قاعدة بيانات SQLite مع Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// التعدادات
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum RecitationType {
+  HIFZ
+  MURAJAA
+  TILAWA
+}
+
+enum AnnouncementAudience {
+  ALL
+  TEACHERS
+  STUDENTS
+  PARENTS
+}
+
+enum FeePeriod {
+  MONTHLY
+  TERM
+  YEARLY
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  PARTIAL
+  WAIVED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+}
+
+enum CertificateType {
+  PART_COMPLETION
+  FULL_QURAN
+  EXCELLENCE
+  ATTENDANCE
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EventType {
+  HOLIDAY
+  EXAM
+  OCCASION
+  COURSE
+}
+
+enum ExcuseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ResourceType {
+  PDF
+  AUDIO
+  LINK
+  TEXT
+}
+
+enum StudentStatus {
+  ACTIVE
+  GRADUATED
+  WITHDRAWN
+  ARCHIVED
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─────────────────────────────────────────────
+// المستخدمون والطلاب
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String?  @unique
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(STUDENT)
+  mustChangePassword Boolean @default(false)
+  failedLoginAttempts Int @default(0)
+  lockedUntil DateTime?
+  whatsappConsent Boolean @default(false)
+  showHijri      Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  // ملف الطالب (إذا كان المستخدم طالبًا)
+  studentProfile Student? @relation("StudentProfile")
+
+  // الأبناء (إذا كان المستخدم ولي أمر)
+  children Student[] @relation("ParentGuardian")
+
+  // الحلقات التي يدرّسها المعلم
+  halaqas Halaqa[] @relation("HalaqaTeacher")
+
+  // سجلات التسميع التي أشرف عليها المعلم
+  recitations RecitationRecord[] @relation("RecitationTeacher")
+
+  // دفعات الرسوم التي استلمها
+  receivedPayments Payment[] @relation("PaymentReceiver")
+
+  // شهادات أصدرها
+  issuedCertificates Certificate[] @relation("CertificateIssuer")
+
+  // المحادثات الداخلية
+  conversationsAsParticipantA Conversation[] @relation("ConversationParticipantA")
+  conversationsAsParticipantB Conversation[] @relation("ConversationParticipantB")
+  sentMessages                 Message[]      @relation("MessageSender")
+
+  // الإشعارات
+  notifications Notification[]
+
+  // سجلات التدقيق التي نفّذها المستخدم
+  auditLogs AuditLog[] @relation("AuditLogUser")
+
+  // طلبات تسجيل تمت مراجعتها
+  reviewedRegistrations RegistrationRequest[] @relation("RegistrationReviewer")
+
+  // أعذار تمت مراجعتها
+  reviewedExcuses Excuse[] @relation("ExcuseReviewer")
+
+  // مواد تعليمية رفعها
+  uploadedResources Resource[] @relation("ResourceUploader")
+
+  // تفضيلات الإشعارات
+  notificationPreferences NotificationPreference[]
+
+  // سجلات تسليم الإشعارات
+  deliveryLogs DeliveryLog[]
+}
+
+model Student {
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  birthDate DateTime?
+  stage     String
+  parentId  String?
+  notes     String?
+  status    StudentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+
+  user   User  @relation("StudentProfile", fields: [userId], references: [id], onDelete: Cascade)
+  parent User? @relation("ParentGuardian", fields: [parentId], references: [id], onDelete: SetNull)
+
+  enrollments Enrollment[]
+  attendance  Attendance[]
+  recitations RecitationRecord[]
+  examResults ExamResult[]
+  invoices    Invoice[]
+  certificates Certificate[]
+  goals        MemorizationGoal[]
+  excuses      Excuse[]
+
+  @@index([parentId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// الحلقات والتسجيل
+// ─────────────────────────────────────────────
+
+model Halaqa {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  teacherId   String
+  time        String // مثل: "16:00 - 17:30"
+  days        String // مثل: "السبت، الاثنين، الأربعاء"
+  maxStudents Int      @default(20)
+  createdAt   DateTime @default(now())
+
+  teacher User @relation("HalaqaTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  enrollments Enrollment[]
+  attendance  Attendance[]
+  exams       Exam[]
+  resources   Resource[]
+
+  @@index([teacherId])
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  studentId  String
+  halaqaId   String
+  enrolledAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  halaqa  Halaqa  @relation(fields: [halaqaId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, halaqaId])
+  @@index([halaqaId])
+}
+
+// ─────────────────────────────────────────────
+// الحضور والتسميع
+// ─────────────────────────────────────────────
+
+model Attendance {
+  id        String           @id @default(cuid())
+  studentId String
+  halaqaId  String
+  date      DateTime
+  status    AttendanceStatus
+  createdAt DateTime         @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  halaqa  Halaqa  @relation(fields: [halaqaId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, halaqaId, date])
+  @@index([halaqaId, date])
+  @@index([studentId, date])
+}
+
+model RecitationRecord {
+  id          String         @id @default(cuid())
+  studentId   String
+  teacherId   String
+  date        DateTime
+  type        RecitationType
+  surahNumber Int
+  fromAyah    Int
+  toAyah      Int
+  grade       Int // من 1 إلى 10 (يُتحقق منها في طبقة التطبيق)
+  notes       String?
+  createdAt   DateTime       @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher User    @relation("RecitationTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, date])
+  @@index([teacherId, date])
+}
+
+// ─────────────────────────────────────────────
+// الاختبارات
+// ─────────────────────────────────────────────
+
+model Exam {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  halaqaId  String
+  createdAt DateTime @default(now())
+
+  halaqa Halaqa @relation(fields: [halaqaId], references: [id], onDelete: Cascade)
+
+  results ExamResult[]
+
+  @@index([halaqaId, date])
+}
+
+model ExamResult {
+  id        String  @id @default(cuid())
+  examId    String
+  studentId String
+  score     Float
+  notes     String?
+
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([studentId])
+}
+
+// ─────────────────────────────────────────────
+// الإعلانات
+// ─────────────────────────────────────────────
+
+model Announcement {
+  id       String               @id @default(cuid())
+  title    String
+  content  String
+  date     DateTime             @default(now())
+  audience AnnouncementAudience @default(ALL)
+
+  @@index([audience, date])
+}
+
+// ─────────────────────────────────────────────
+// رسائل التواصل
+// ─────────────────────────────────────────────
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([isRead])
+}
+
+// ─────────────────────────────────────────────
+// خطط الحفظ
+// ─────────────────────────────────────────────
+
+model MemorizationGoal {
+  id         String     @id @default(cuid())
+  studentId  String
+  fromSurah  Int
+  fromAyah   Int
+  toSurah    Int
+  toAyah     Int
+  startDate  DateTime
+  targetDate DateTime
+  status     GoalStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, status])
+  @@index([targetDate])
+}
+
+// ─────────────────────────────────────────────
+// الإشعارات
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// إعدادات عامة
+// ─────────────────────────────────────────────
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// الرسوم والدفعات
+// ─────────────────────────────────────────────
+
+model FeePlan {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Float
+  period    FeePeriod
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+
+  @@index([period])
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  studentId String
+  feePlanId String
+  amount    Float
+  dueDate   DateTime
+  status    InvoiceStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feePlan  FeePlan  @relation(fields: [feePlanId], references: [id], onDelete: Restrict)
+  payments Payment[]
+
+  @@index([studentId])
+  @@index([feePlanId])
+  @@index([status, dueDate])
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  invoiceId  String
+  amount     Float
+  date       DateTime      @default(now())
+  method     PaymentMethod
+  note       String?
+  receivedBy String?
+  createdAt  DateTime      @default(now())
+
+  invoice  Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  receiver User?   @relation("PaymentReceiver", fields: [receivedBy], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([date])
+}
+
+// ─────────────────────────────────────────────
+// الشهادات
+// ─────────────────────────────────────────────
+
+model Certificate {
+  id            String          @id @default(cuid())
+  studentId     String
+  type          CertificateType
+  title         String
+  serialNumber  String          @unique
+  issuedBy      String?
+  issuedAt      DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  issuer  User?   @relation("CertificateIssuer", fields: [issuedBy], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([type])
+}
+
+// ─────────────────────────────────────────────
+// الرسائل الداخلية
+// ─────────────────────────────────────────────
+
+model Conversation {
+  id             String   @id @default(cuid())
+  participantAId String
+  participantBId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  participantA User      @relation("ConversationParticipantA", fields: [participantAId], references: [id], onDelete: Cascade)
+  participantB User      @relation("ConversationParticipantB", fields: [participantBId], references: [id], onDelete: Cascade)
+  messages     Message[]
+
+  @@unique([participantAId, participantBId])
+  @@index([participantAId])
+  @@index([participantBId])
+  @@index([updatedAt])
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([readAt])
+}
+
+// ─────────────────────────────────────────────
+// طلبات التسجيل
+// ─────────────────────────────────────────────
+
+model RegistrationRequest {
+  id                  String             @id @default(cuid())
+  studentName         String
+  birthDate           DateTime?
+  parentName          String
+  phone               String
+  email               String
+  stage               String
+  currentMemorization String?
+  notes               String?
+  status              RegistrationStatus @default(PENDING)
+  adminNote           String?
+  ipAddress           String?
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  reviewer User? @relation("RegistrationReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// تفضيلات الإشعارات وسجل التسليم
+// ─────────────────────────────────────────────
+
+model NotificationPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  channel   String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel])
+  @@index([userId])
+}
+
+model DeliveryLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  channel   String
+  event     String
+  recipient String?
+  status    String   // SENT | FAILED | SKIPPED
+  error     String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([channel, status])
+}
+
+// ─────────────────────────────────────────────
+// المواد التعليمية
+// ─────────────────────────────────────────────
+
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  type        ResourceType
+  // للرابط/النص
+  url         String?
+  content     String?
+  // للملفات
+  filePath    String?
+  mimeType    String?
+  size        Int?
+  halaqaId    String?
+  uploadedBy  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  halaqa   Halaqa? @relation(fields: [halaqaId], references: [id], onDelete: SetNull)
+  uploader User    @relation("ResourceUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([halaqaId])
+  @@index([type])
+  @@index([uploadedBy])
+}
+
+// ─────────────────────────────────────────────
+// تقويم المدرسة والأعذار
+// ─────────────────────────────────────────────
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  type        EventType @default(OCCASION)
+  audience    String    @default("ALL")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([startDate, endDate])
+  @@index([type])
+}
+
+model Excuse {
+  id         String       @id @default(cuid())
+  studentId  String
+  date       DateTime
+  reason     String
+  status     ExcuseStatus @default(PENDING)
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reviewer User?   @relation("ExcuseReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([studentId, date])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// سجل التدقيق
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  // يبقى السجل محفوظًا حتى لو حُذف المستخدم.
+  user User? @relation("AuditLogUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entity, action])
+  @@index([userId])
+}

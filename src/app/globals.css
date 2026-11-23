@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-cairo), "Segoe UI", Tahoma, Arial, sans-serif;
+
+  --color-brand-50: #f1f7f4;
+  --color-brand-100: #dcece4;
+  --color-brand-200: #bad9c9;
+  --color-brand-300: #8dbfa7;
+  --color-brand-400: #5da285;
+  --color-brand-500: #3e8669;
+  --color-brand-600: #2e6b54;
+  --color-brand-700: #265745;
+  --color-brand-800: #1d4638;
+  --color-brand-900: #0f3d2e;
+  --color-brand-950: #08251c;
+
+  --color-gold-50: #fdfaf0;
+  --color-gold-100: #f9f0d2;
+  --color-gold-200: #f1dea0;
+  --color-gold-300: #e7c766;
+  --color-gold-400: #dcb03c;
+  --color-gold-500: #c9a227;
+  --color-gold-600: #a8801f;
+  --color-gold-700: #855f1d;
+  --color-gold-800: #6c4c1e;
+  --color-gold-900: #5a3f1d;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #fbfaf5;
+  color: #08251c;
+  font-family: var(--font-cairo), "Segoe UI", Tahoma, Arial, sans-serif;
+  line-height: 1.8;
+}
+
+.dark body,
+html.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #0b1f17;
+  color: #e6f0ea;
+}
+
+/* بطاقات وحاويات عامة في الوضع الداكن */
+.dark .bg-white {
+  background-color: #123024;
+}
+
+.dark .bg-brand-50,
+.dark .bg-brand-50\/40,
+.dark .bg-brand-50\/70 {
+  background-color: #1a3d2f;
+}
+
+.dark .bg-brand-100 {
+  background-color: #224a3a;
+}
+
+.dark .text-brand-950,
+.dark .text-brand-900 {
+  color: #e6f0ea;
+}
+
+.dark .text-brand-800,
+.dark .text-brand-700 {
+  color: #cfe3d8;
+}
+
+.dark .text-brand-600,
+.dark .text-brand-500 {
+  color: #a8c9b8;
+}
+
+.dark .border-brand-900\/10,
+.dark .border-brand-900\/15 {
+  border-color: rgba(186, 217, 201, 0.18);
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1a3d2f;
+  color: #e6f0ea;
+  border-color: rgba(186, 217, 201, 0.25);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #7fa892;
+}
+
+/* أنماط الطباعة تبقى كما هي */
+@media print {
+  html.dark body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+::selection {
+  background-color: #e7c766;
+  color: #08251c;
+}
+
+/* نقشة خفيفة تُستخدم في القسم الترحيبي */
+.ornamental-glow {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(201, 162, 39, 0.22), transparent 42%),
+    radial-gradient(circle at 85% 80%, rgba(93, 162, 133, 0.28), transparent 45%);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent);
+}
+
+/* تنسيق الطباعة: إخفاء عناصر التنقل وطباعة قسم تقرير واحد عند الحاجة */
+@media print {
+  header,
+  footer,
+  aside,
+  .print-hidden,
+  [data-print-hidden="true"] {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  main,
+  section {
+    padding-top: 0 !important;
+  }
+
+  [data-report-section] {
+    break-inside: avoid;
+  }
+
+  .report-card {
+    box-shadow: none !important;
+  }
+}
+
