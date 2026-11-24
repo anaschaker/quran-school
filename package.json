@@ -5,12 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:netlify": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-"db:migrate:turso": "tsx scripts/turso-migrate.ts",
+    "db:migrate:turso": "tsx scripts/turso-migrate.ts",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "test": "vitest run",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",
+    "@tailwindcss/postcss": "^4.3.5",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

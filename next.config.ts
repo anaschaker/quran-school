@@ -19,6 +19,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   /* config options here */
   output: process.env.NETLIFY ? undefined : "standalone",
+  serverExternalPackages: ["@prisma/adapter-libsql", "@libsql/client"],
   cacheComponents: true,
   partialPrefetching: true,
   async headers() {

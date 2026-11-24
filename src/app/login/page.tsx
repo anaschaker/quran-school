@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/login-form";
 import { school } from "@/config/school";
+import { getSession } from "@/lib/auth";
+import { ROLE_HOME } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "تسجيل الدخول",
   description: `تسجيل الدخول إلى بوابة ${school.name}.`,
 };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getSession();
+
+  if (session) {
+    redirect(ROLE_HOME[session.role]);
+  }
+
   return (
     <main className="flex-1">
       <section className="mx-auto grid w-full max-w-5xl gap-6 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:py-20">

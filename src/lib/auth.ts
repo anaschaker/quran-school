@@ -33,6 +33,10 @@ export async function requireRole(role: AppRole): Promise<SessionPayload> {
     redirect(ROLE_HOME[session.role]);
   }
 
+  if (session.mustChangePassword) {
+    redirect("/account?force=1");
+  }
+
   return session;
 }
 

@@ -53,3 +53,10 @@ next-env.d.ts
 tmp-*
 test-results/
 playwright-report/
+
+# Local Netlify folder
+.netlify
+
+# Agent/harness local files
+.agents/
+opencode.jsonc
